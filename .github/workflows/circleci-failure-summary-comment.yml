@@ -71,7 +71,7 @@ jobs:
 
       - name: Upload summaries to Hub
         env:
-          HF_TOKEN: ${{ secrets.TRANSFORMERS_HUB_BOT_HF_TOKEN }}
+          HF_TOKEN: ${{ secrets.HF_CI_WRITE_TOKEN }}
           CIRCLECI_RESULTS_DATASET_ID: "transformers-community/circleci-test-results"
         run: |
           python utils/upload_circleci_results.py --source-dir outputs --dataset-id "${CIRCLECI_RESULTS_DATASET_ID}"
