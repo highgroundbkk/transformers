@@ -107,7 +107,8 @@ jobs:
           
           echo "Downloading failure_summary.json from: ${failure_summary_url}"
           mkdir -p outputs
-          curl -s -H "Circle-Token: ${CIRCLE_TOKEN}" "${failure_summary_url}" -o outputs/failure_summary.json
+          curl -s "${failure_summary_url}" -o outputs/failure_summary.json
+          ls -la outputs
           
           echo "Downloaded failure_summary.json successfully"
           
