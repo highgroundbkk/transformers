@@ -157,6 +157,7 @@ jobs:
           api.upload_folder(
               commit_message=f"Update CircleCI artifacts for PR {pr_number} ({commit_short})",
               folder_path=folder_path,
+              path_in_repo=folder_path,
               repo_id=dataset_id,
               repo_type="dataset",
               token=token,
