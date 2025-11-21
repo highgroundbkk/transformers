@@ -123,12 +123,6 @@ jobs:
           echo "workflow_id=${workflow_id}" >> $GITHUB_OUTPUT
           echo "collection_job_number=${collection_job_number}" >> $GITHUB_OUTPUT
 
-      - name: Generate failure summary
-        env:
-          CIRCLE_TOKEN: ${{ secrets.CI_ARTIFACT_TOKEN }}
-        run: |
-          python utils/process_circleci_workflow_test_reports.py --workflow_id "${{ steps.circleci.outputs.workflow_id }}"
-
       - name: Upload summaries to Hub
         env:
           HF_TOKEN: ${{ secrets.HF_CI_WRITE_TOKEN }}
