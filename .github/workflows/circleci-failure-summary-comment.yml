@@ -127,8 +127,42 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_CI_WRITE_TOKEN }}
           CIRCLECI_RESULTS_DATASET_ID: "transformers-community/circleci-test-results"
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          python utils/upload_circleci_results.py --source-dir outputs --dataset-id "${CIRCLECI_RESULTS_DATASET_ID}"
+          # Extract short SHA
+          COMMIT_SHORT="${COMMIT_SHA:0:12}"
+          
+          # Create nested folder structure
+          TARGET_DIR="pr-${PR_NUMBER}/sha-${COMMIT_SHORT}"
+          mkdir -p "${TARGET_DIR}"
+          mv outputs/failure_summary.json "${TARGET_DIR}/"
+          
+          echo "Uploading ${TARGET_DIR} to ${CIRCLECI_RESULTS_DATASET_ID}"
+          
+          # Upload folder to Hub
+          python << 'EOF'
+          import os
+          from huggingface_hub import HfApi
+          
+          dataset_id = os.environ["CIRCLECI_RESULTS_DATASET_ID"]
+          token = os.environ["HF_TOKEN"]
+          pr_number = os.environ["PR_NUMBER"]
+          commit_sha = os.environ["COMMIT_SHA"]
+          commit_short = commit_sha[:12]
+          folder_path = f"pr-{pr_number}/sha-{commit_short}"
+          
+          api = HfApi(token=token)
+          api.upload_folder(
+              commit_message=f"Update CircleCI artifacts for PR {pr_number} ({commit_short})",
+              folder_path=folder_path,
+              repo_id=dataset_id,
+              repo_type="dataset",
+              token=token,
+          )
+          
+          print(f"Uploaded {folder_path} to {dataset_id}")
+          EOF
 
       - name: Post comment with helper link
         env:
