@@ -97,14 +97,27 @@ jobs:
           
           echo "$artifacts" | jq '.'
           
-          # Step 7: Download artifacts (example for specific files)
-          # You can loop through artifacts and download what you need
-          echo "$artifacts" | jq -r '.items[] | "\(.path) \(.url)"' | while read -r path url; do
-            echo "Found artifact: ${path}"
-            # Uncomment to download:
-            # mkdir -p "$(dirname "${path}")"
-            # curl -s -H "Circle-Token: ${CIRCLE_TOKEN}" "${url}" -o "${path}"
-          done
+          # Step 7: Download failure_summary.json specifically
+          failure_summary_url=$(echo "$artifacts" | jq -r '.items[] | select(.path == "outputs/failure_summary.json") | .url')
+          
+          if [ -z "$failure_summary_url" ]; then
+            echo "failure_summary.json not found in artifacts"
+            exit 1
+          fi
+          
+          echo "Downloading failure_summary.json from: ${failure_summary_url}"
+          mkdir -p outputs
+          curl -s -H "Circle-Token: ${CIRCLE_TOKEN}" "${failure_summary_url}" -o outputs/failure_summary.json
+          
+          echo "Downloaded failure_summary.json successfully"
+          
+          # Verify the file was downloaded
+          if [ -f outputs/failure_summary.json ]; then
+            echo "File size: $(wc -c < outputs/failure_summary.json) bytes"
+          else
+            echo "Failed to download failure_summary.json"
+            exit 1
+          fi
           
           # Export variables for next steps
           echo "workflow_id=${workflow_id}" >> $GITHUB_OUTPUT
