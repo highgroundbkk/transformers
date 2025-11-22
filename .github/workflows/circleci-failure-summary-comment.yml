@@ -131,36 +131,29 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          # Extract short SHA
-          COMMIT_SHORT="${COMMIT_SHA:0:12}"
-          
-          # Create nested folder structure
-          TARGET_DIR="pr-${PR_NUMBER}/sha-${COMMIT_SHORT}"
-          mkdir -p "${TARGET_DIR}"
-          mv outputs/failure_summary.json "${TARGET_DIR}/"
-          
-          echo "Uploading ${TARGET_DIR} to ${CIRCLECI_RESULTS_DATASET_ID}"
-          
-          # Upload folder to Hub
           python << 'EOF'
           import os
+          from pathlib import Path
           from huggingface_hub import HfApi
           
-          dataset_id = os.environ["CIRCLECI_RESULTS_DATASET_ID"]
-          token = os.environ["HF_TOKEN"]
+          # Setup paths
           pr_number = os.environ["PR_NUMBER"]
-          commit_sha = os.environ["COMMIT_SHA"]
-          commit_short = commit_sha[:12]
+          commit_short = os.environ["COMMIT_SHA"][:12]
           folder_path = f"pr-{pr_number}/sha-{commit_short}"
           
-          api = HfApi(token=token)
+          # Create folder and move file
+          Path(folder_path).mkdir(parents=True, exist_ok=True)
+          Path("outputs/failure_summary.json").rename(f"{folder_path}/failure_summary.json")
+          
+          # Upload to Hub
+          dataset_id = os.environ["CIRCLECI_RESULTS_DATASET_ID"]
+          api = HfApi(token=os.environ["HF_TOKEN"])
           api.upload_folder(
               commit_message=f"Update CircleCI artifacts for PR {pr_number} ({commit_short})",
               folder_path=folder_path,
               path_in_repo=folder_path,
               repo_id=dataset_id,
               repo_type="dataset",
-              token=token,
           )
           
           print(f"Uploaded {folder_path} to {dataset_id}")
