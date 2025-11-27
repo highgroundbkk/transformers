@@ -135,21 +135,3 @@ if __name__ == "__main__":
 
     with open("outputs/failure_summary.json", "w") as fp:
         json.dump({"failures": failure_entries, "by_test": by_test, "by_model": by_model}, fp, indent=4)
-
-    # Create markdown report
-    md_lines = ["# Failure summary\n"]
-    if by_test:
-        md_lines += ["## By test\n", "| Test | Failures | Error(s) |", "| --- | --- | --- |"]
-        for test, info in sorted(by_test.items(), key=lambda x: x[1]["count"], reverse=True):
-            md_lines.append(
-                f"| {test} | {info['count']} | {'; '.join(f'{c}× {m}' for m, c in info['errors'].items())} |")
-
-        md_lines += ["", "## By model\n", "| Model | Failures | Error(s) |", "| --- | --- | --- |"]
-        for model, info in sorted(by_model.items(), key=lambda x: x[1]["count"], reverse=True):
-            md_lines.append(
-                f"| {model} | {info['count']} | {'; '.join(f'{c}× {m}' for m, c in info['errors'].items())} |")
-    else:
-        md_lines.append("No failures were reported.\n")
-
-    with open("outputs/failure_summary.md", "w") as f:
-        f.write("\n".join(md_lines))
