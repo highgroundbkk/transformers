@@ -81,12 +81,14 @@ if __name__ == "__main__":
                         test_name = test_name.strip()
                         parts = test_name.split("::", 1)[0].split("/")
                         model_name = parts[2] if len(parts) >= 3 and test_name.startswith("tests/models/") else None
+                        full_error = failure_lines_list[failure_idx] if failure_idx < len(
+                            failure_lines_list) else short_error
 
                         failure_entries.append({
                             "job_name": job["name"],
                             "test_name": test_name,
-                            "error": failure_lines_list[failure_idx] if failure_idx < len(
-                                failure_lines_list) else short_error,
+                            "short_error": short_error,
+                            "error": full_error,
                             "model_name": model_name,
                         })
                         failure_idx += 1
@@ -112,19 +114,24 @@ if __name__ == "__main__":
         parts = normalized.split("::")
         normalized = "::".join(parts[:-1] + [re.sub(r"_\d{2,}.*$", "", parts[-1])])
 
-        by_test.setdefault(normalized, {"count": 0, "errors": Counter()})
+        by_test.setdefault(normalized, {"count": 0, "errors": Counter(), "jobs": set(), "variants": set()})
         by_test[normalized]["count"] += 1
         by_test[normalized]["errors"][entry["error"]] += 1
+        by_test[normalized]["jobs"].add(entry["job_name"])
+        by_test[normalized]["variants"].add(entry["test_name"])
 
         if entry["model_name"]:
             by_model.setdefault(entry["model_name"], {"count": 0, "errors": Counter()})
             by_model[entry["model_name"]]["count"] += 1
             by_model[entry["model_name"]]["errors"][entry["error"]] += 1
 
-    # Convert Counter to dict for JSON serialization
-    for d in [by_test, by_model]:
-        for info in d.values():
-            info["errors"] = dict(info["errors"].most_common())
+    # Convert Counter and sets to dicts/lists for JSON serialization
+    for info in by_test.values():
+        info["errors"] = dict(info["errors"].most_common())
+        info["jobs"] = sorted(info["jobs"])
+        info["variants"] = sorted(info["variants"])
+    for info in by_model.values():
+        info["errors"] = dict(info["errors"].most_common())
 
     with open("outputs/failure_summary.json", "w") as fp:
         json.dump({"failures": failure_entries, "by_test": by_test, "by_model": by_model}, fp, indent=4)
