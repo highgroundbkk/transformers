@@ -70,10 +70,11 @@ jobs:
         env:
           COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
           REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Step 1: Get CircleCI check suite ID
           echo "Getting check suites for commit ${COMMIT_SHA}..."
-          check_suites=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          check_suites=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
             "https://api.github.com/repos/${REPO}/commits/${COMMIT_SHA}/check-suites")
           
           circleci_suite_id=$(echo "$check_suites" | jq -r '.check_suites[] | select(.app.slug == "circleci-checks") | .id' | head -n 1)
@@ -81,7 +82,7 @@ jobs:
           
           # Step 2: Get check runs from the CircleCI suite
           echo "Getting check runs for suite ${circleci_suite_id}..."
-          check_runs=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          check_runs=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
             "https://api.github.com/repos/${REPO}/check-suites/${circleci_suite_id}/check-runs")
           
           # Step 3: Extract workflow ID from the "run_tests" check run
