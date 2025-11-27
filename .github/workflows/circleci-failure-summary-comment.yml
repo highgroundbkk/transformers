@@ -81,7 +81,7 @@ jobs:
           
           # Step 4: Get all jobs in the workflow
           echo "Getting jobs for workflow ${workflow_id}..."
-          jobs=$(curl -s -H "Circle-Token: ${CIRCLE_TOKEN}" \
+          jobs=$(curl -s \
             "https://circleci.com/api/v2/workflow/${workflow_id}/job")
           
           # Step 5: Extract collection_job details
@@ -92,7 +92,7 @@ jobs:
           
           # Step 6: Get artifacts list
           echo "Getting artifacts for job ${collection_job_number}..."
-          artifacts=$(curl -s -H "Circle-Token: ${CIRCLE_TOKEN}" \
+          artifacts=$(curl -s \
             "https://circleci.com/api/v2/project/gh/${REPO}/${collection_job_number}/artifacts")
           
           echo "$artifacts" | jq '.'
@@ -107,7 +107,7 @@ jobs:
           
           echo "Downloading failure_summary.json from: ${failure_summary_url}"
           mkdir -p outputs
-          curl -s -L -H "Circle-Token: ${CIRCLE_TOKEN}" "${failure_summary_url}" -o outputs/failure_summary.json
+          curl -s -L "${failure_summary_url}" -o outputs/failure_summary.json
           ls -la outputs
           
           echo "Downloaded failure_summary.json successfully"
