@@ -29,28 +29,41 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
-          github_repository: ${{ github.repository }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
+          # Exit on error, undefined variables, or pipe failures
+          set -euo pipefail
+          
           echo "Waiting for CircleCI check suite to complete..."
-          end=$((SECONDS+1800))
+          # Timeout after 30 minutes (1800 seconds)
+          end=$((SECONDS + 1800))
+          
           while [ $SECONDS -lt $end ]; do
-            suite_json=$(gh api "repos/${github_repository}/commits/${COMMIT_SHA}/check-suites" --jq '.check_suites[] | select(.app.slug=="circleci-checks")')
+            # Query GitHub API for check suites associated with this commit
+            # || echo "" allows retry on transient API failures instead of exiting
+            suite_json=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${COMMIT_SHA}/check-suites" \
+              --jq '.check_suites[] | select(.app.slug == "circleci-checks")' || echo "")
+            
             if [ -z "$suite_json" ]; then
               echo "CircleCI check suite not found yet, retrying..."
             else
               status=$(echo "$suite_json" | jq -r '.status')
               conclusion=$(echo "$suite_json" | jq -r '.conclusion // empty')
-              echo "Current CircleCI check suite status: $status (conclusion: $conclusion)"
+              echo "CircleCI status: $status, conclusion: $conclusion"
+              
+              # Check suite is done when status is "completed" AND conclusion is set
               if [ "$status" = "completed" ] && [ -n "$conclusion" ]; then
-                break
+                echo "Check suite completed successfully"
+                exit 0
               fi
             fi
+            
+            # Poll every 20 seconds
             sleep 20
           done
-          if [ $SECONDS -ge $end ]; then
-            echo "Timed out waiting for CircleCI check suite."
-            exit 1
-          fi
+    
+          echo "ERROR: Timed out waiting for CircleCI check suite"
+          exit 1
 
       - name: Get CircleCI run's artifacts and upload them to Hub
         id: circleci
