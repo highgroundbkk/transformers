@@ -121,9 +121,10 @@ if __name__ == "__main__":
         by_test[normalized]["variants"].add(entry["test_name"])
 
         if entry["model_name"]:
-            by_model.setdefault(entry["model_name"], {"count": 0, "errors": Counter()})
+            by_model.setdefault(entry["model_name"], {"count": 0, "errors": Counter(), "tests": set()})
             by_model[entry["model_name"]]["count"] += 1
             by_model[entry["model_name"]]["errors"][entry["error"]] += 1
+            by_model[entry["model_name"]]["tests"].add(entry["test_name"])
 
     # Convert Counter and sets to dicts/lists for JSON serialization
     for info in by_test.values():
@@ -132,6 +133,7 @@ if __name__ == "__main__":
         info["variants"] = sorted(info["variants"])
     for info in by_model.values():
         info["errors"] = dict(info["errors"].most_common())
+        info["tests"] = sorted(info["tests"])
 
     with open("outputs/failure_summary.json", "w") as fp:
         json.dump({"failures": failure_entries, "by_test": by_test, "by_model": by_model}, fp, indent=4)
